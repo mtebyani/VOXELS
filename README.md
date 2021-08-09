@@ -1,2 +1,2 @@
 # VOXELS
-Simulations, data processing and visualizations for all voxel-based bots 
+Simulations, data processing and visualizations for voxel-based bots 
