@@ -33,7 +33,7 @@ class ee:
 class servo:
     def __init__(self, x, y, z, act_dim, gait):
         self.pos = (x, y, z)
-        self.act_dim=act_dim # 1 = 0134, 2=0235, 3=1245
+        self.act_dim=act_dim  # 1 = 0134, 2=0235, 0=1245
         if act_dim==0:
             self.connected=z+2
         elif act_dim==1:
@@ -83,4 +83,28 @@ def sim(e, *t):
                 simdisp.append(np.zeros((3)))
             else:
                 simdisp.append(deepcopy(end.disp))
-    return(np.array(simdisp))
+
+    return np.array(simdisp)
+
+
+
+class TestCases:
+    def test_ex1(self):
+        s1 = [servo(2, 1, 1, 1, -5)]
+        ees = [ee(0, 1, 3, 0, s1),
+               ee(1, 1, 4, 5, s1)]
+        desired = np.array([[0., 0., -5.],
+                            [-5., 0., 0.]])
+        assert (sim(ees) == desired).all()
+
+    def test_ex1_variant(self):
+        '''
+        Any given node has two equally valid IDs. Make sure the sign
+        is the same if you choose the other in both cases.
+        '''
+        s1 = [servo(2, 1, 1, 1, -5)]
+        ees = [ee(0, 1, 3, 3, s1),
+               ee(1, 1, 4, 2, s1)]
+        desired = np.array([[0., 0., -5.],
+                            [-5., 0., 0.]])
+        assert (sim(ees) == desired).all()
