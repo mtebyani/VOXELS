@@ -1,5 +1,4 @@
 import numpy as np
-from copy import deepcopy
 
 mat = np.zeros((3, 3, 6))
 mat[2, 0, 1]=-1
@@ -59,52 +58,35 @@ class servo:
             self.connected=y+2
         elif act_dim==2:
             self.connected=x+2
-        self.gait=gait
+        self.gait=np.atleast_1d(gait)
         self.disp = 0
 
-def sim(e, *t):
+def sim(e, ts=[0]):
+
     simdisp=[]
-
-    if t !=():
-        for i,end in enumerate(e):
-            for time in t[0]:
-                end.disp=0
-                for controls in end.control:
-                    controls.disp = controls.gait[time]
-                    # calculate displacements as ind sum of components
-                    end.disp += controls.disp*mat[controls.act_dim, :, end.node_id]
-                if end.control==[]: # if no connected servos
-                    simdisp.append(np.zeros((3)))
-                else:
-                    simdisp.append(deepcopy(end.disp))
-    else:
-
-        for i,end in enumerate(e):
-            end.disp=0
+    for i,end in enumerate(e):
+        for t in ts:
+            end.disp = np.zeros(3)
             for controls in end.control:
-                controls.disp = controls.gait
+                controls.disp = controls.gait[t]
                 # calculate displacements as ind sum of components
                 end.disp += controls.disp*mat[controls.act_dim, :, end.node_id]
                 # CHECKERBOARD PARITY, displacement direction:
                 for i in range(3):
-                    #if movement in dim, check dir:
-                    if controls.disp*mat[controls.act_dim, :, end.node_id][i]!=0.:
+                    # if movement in dim, check dir:
+                    if controls.disp*mat[controls.act_dim, i, end.node_id]!=0.:
                         kEnd=0
                         kControl=0
-                        if end.pos[i]%4 in (0, 1):
+                        if end.pos[i] % 4 in (0, 1):
                             kEnd=1
-                        if (controls.pos[i]%4) in (0, 1):
+                        if controls.pos[i] % 4 in (0, 1):
                             kControl=1
-                        if kEnd!=kControl:
+                        if kEnd != kControl:
                             end.disp[i]*=-1
 
-            if end.control==[]: # if no connected servos
-                simdisp.append(np.zeros((3)))
-            else:
-                simdisp.append(deepcopy(end.disp))
+            simdisp.append(end.disp)
 
     return np.array(simdisp)
-
 
 
 class TestCases:
@@ -114,7 +96,42 @@ class TestCases:
                ee(1, 1, 4, 5, s1)]
         desired = np.array([[0., 0., -5.],
                             [-5., 0., 0.]])
-        assert (sim(ees) == desired).all()
+        assert np.all(sim(ees) == desired)
+
+    def test_ex2(self):
+        s = [servo(2, 1, 1, 1, 5),
+             servo(1, 2, 1, 0, -5),
+             servo(2, 3, 1, 1, 5),
+             servo(3, 2, 1, 0, -5)]
+        ees = [ee(1, 3, 4, 5, s),
+               ee(1, 1, 4, 5, s),
+               ee(3, 1, 4, 5, s),
+               ee(3, 3, 4, 5, s)]
+        desired = np.array([[5., 5., 0.],
+                            [5., -5., 0.],
+                            [-5., -5., 0.],
+                            [-5., 5., 0.]])
+        assert np.all(sim(ees) == desired)
+
+    def test_ex3(self):
+        s = [servo(2, 1, 1, 1, -5)]
+        ees = [ee(4, 1, 3, 3, s),
+               ee(1, 1, 2, 5, s)]
+        desired = np.array([[0., 0., 5.],
+                            [-5., 0., 0.]])
+        assert np.all(sim(ees) == desired)
+
+    def test_gait(self):
+        'Make sure gaits with multiple entries work.'
+        s = [servo(2, 1, 1, 1, [0, -5])]
+        ees = [ee(4, 1, 3, 3, s),
+               ee(1, 1, 2, 5, s)]
+        desired = np.array([[0., 0., 0.],
+                            [0., 0., 5.],
+                            [0., 0., 0.],
+                            [-5., 0., 0.]])
+        assert np.all(sim(ees, [0, 1]) == desired)
+
 
     def test_position_validation(self):
         import pytest
@@ -133,4 +150,4 @@ class TestCases:
                ee(1, 1, 4, 2, s1)]
         desired = np.array([[0., 0., -5.],
                             [-5., 0., 0.]])
-        assert (sim(ees) == desired).all()
+        assert np.all(sim(ees) == -desired)
