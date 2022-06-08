@@ -1,18 +1,15 @@
 import numpy as np
 
-mat = np.zeros((3, 3, 6))
-mat[2, 0, 1]=-1
-mat[2, 0, 4]=1
-mat[2, 1, 0]=1
-mat[2, 1, 3]=-1
-mat[1, 0, 2]=1
-mat[1, 0, 5]=-1
-mat[1, 2, 0]=-1
-mat[1, 2, 3]=1
-mat[0, 1, 2]=1
-mat[0, 1, 5]=-1
-mat[0, 2, 1]=-1
-mat[0, 2, 4]=1
+A = np.array([
+    [[0., 0., 0., 0., 0., 0.],
+     [0., 0., -1, 0., 0., 1.],
+     [0., 1., 0., 0., -1, 0.]],
+    [[0., 0., -1, 0., 0., 1.],
+     [0., 0., 0., 0., 0., 0.],
+     [1., 0., 0., -1, 0., 0.]],
+    [[0., 1., 0., 0., -1, 0.],
+     [-1, 0., 0., 1., 0., 0.],
+     [0., 0., 0., 0., 0., 0.]]])
 
 id_map = {
     (1,0,1): [None, 1, 4],
@@ -64,24 +61,24 @@ class servo:
 def sim(e, ts=[0]):
 
     simdisp=[]
-    for i,end in enumerate(e):
+    for end in e:
         for t in ts:
             end.disp = np.zeros(3)
             for controls in end.control:
                 controls.disp = controls.gait[t]
                 # calculate displacements as ind sum of components
-                end.disp += controls.disp*mat[controls.act_dim, :, end.node_id]
+                end.disp += controls.disp*A[controls.act_dim, :, end.node_id]
                 # CHECKERBOARD PARITY, displacement direction:
                 for i in range(3):
                     # if movement in dim, check dir:
-                    if controls.disp*mat[controls.act_dim, i, end.node_id]!=0.:
+                    if controls.disp*A[controls.act_dim, i, end.node_id]!=0.:
                         kEnd=0
                         kControl=0
                         if end.pos[i] % 4 in (0, 1):
                             kEnd=1
                         if controls.pos[i] % 4 in (0, 1):
                             kControl=1
-                        if kEnd != kControl:
+                        if kEnd == kControl:
                             end.disp[i]*=-1
 
             simdisp.append(end.disp)
