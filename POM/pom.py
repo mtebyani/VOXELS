@@ -15,6 +15,23 @@ mat[0, 1, 5]=-1
 mat[0, 2, 1]=-1
 mat[0, 2, 4]=1
 
+id_map = {
+    (1,0,1): [None, 1, 4],
+    (1,1,0): [None, 2, 5],
+    (0,1,1): [None, 0, 3]
+}
+
+def validate_position(x, y, z, node_id=None):
+    err = 'Selected node does not exist.'
+    x, y, z = x % 2, y % 2, z % 2
+
+    if x + y + z != 2:
+        raise ValueError(err)
+
+    if node_id not in id_map[x,y,z]:
+        raise ValueError(err)
+
+
 # build connection map
 def check_servo_mappings(s, ee_pos):
     connected_servos=[]
@@ -25,6 +42,7 @@ def check_servo_mappings(s, ee_pos):
 
 class ee:
     def __init__(self, x, y, z, node_id, s):
+        validate_position(x, y, z, node_id)
         self.pos=(x, y, z)
         self.node_id = node_id
         self.disp=np.zeros((3))
@@ -32,6 +50,7 @@ class ee:
 
 class servo:
     def __init__(self, x, y, z, act_dim, gait):
+        validate_position(x, y, z)
         self.pos = (x, y, z)
         self.act_dim=act_dim  # 1 = 0134, 2=0235, 0=1245
         if act_dim==0:
@@ -96,6 +115,13 @@ class TestCases:
         desired = np.array([[0., 0., -5.],
                             [-5., 0., 0.]])
         assert (sim(ees) == desired).all()
+
+    def test_position_validation(self):
+        import pytest
+        with pytest.raises(ValueError):
+            ee(2, 1, 1, 1, [])
+        with pytest.raises(ValueError):
+            ee(2, 1, 1, 2, [])
 
     def test_ex1_variant(self):
         '''
