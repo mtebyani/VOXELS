@@ -24,18 +24,9 @@ class Node:
         axis_offset[self.id % 3] = self.id // 3
         return axis_offset + self.pos
 
-    def _normalized_pos(self):
-        '''
-        Lattice position if we normalize node IDs to all be 0-3. This
-        is used to check which nodes are in the same plane. It just
-        treats all the higher node IDs as their lower-numbered
-        counterpart in the next voxel over.
-        '''
-        return self.pos + (np.arange(3)==self.id % 3)*(self.id//3)
-
     def planes_match(self, other):
         'Return whether each of the three planes matches.'
-        return self._normalized_pos() == other._normalized_pos()
+        return self.position() == other.position()
 
 class Servo:
     def __init__(self, node, direction):
@@ -174,6 +165,11 @@ class TestNodeInvariants:
                 offset[shared_plane] = 42
                 n1, n2 = Node(*pos, nid1), Node(*pos+offset, nid2)
                 assert not np.any(n1.planes_match(n2))
+
+    class TestSharedPlanesForIncompatibleID:
+        def test_same_voxel_incompatible_node_means_plane_not_shared(self):
+            n1, n2 = Node(0,0,0,1), Node(0,0,0,2)
+            assert np.all(n1.planes_match(n2) == [True, False, False])
 
 
 
