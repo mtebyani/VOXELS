@@ -57,7 +57,7 @@ class Servo:
         '''
         if node.pos[self.pom] == self.node.pos[self.pom]:
             c_id = -1 if node.nid > 2 else 1
-            c = (-1)**((node.pos - self.node.pos).sum() // 2)
+            c = (-1)**abs((node.pos - self.node.pos).sum() // 2)
             return c * c_id * self._c_id * amount * A[self.pom, :, node.nid]
         return np.zeros(3)
 
@@ -221,3 +221,40 @@ class TestServoInvariants:
             v.add_effector(Node(1, 0, 3))
             v.add_effector(Node(1, 0, 3, 4))
             assert np.all(v.actuate(5) == [0, 0, -5])
+
+
+class TestNotebookExamples:
+    def test_ex1(self):
+        v = Voxels()
+        v.add_servo(Node(2, 1, 1), 2)
+        v.add_effector(Node(0, 1, 3))
+        v.add_effector(Node(1, 1, 4))
+        desired = np.array([[0., 0., -5.],
+                            [-5., 0., 0.]])
+        assert np.all(v.actuate(-5.) == desired)
+
+    def test_ex2(self):
+        v = Voxels()
+        v.add_servo(Node(2, 1, 1), 2)
+        v.add_servo(Node(1, 2, 1), 2)
+        v.add_servo(Node(2, 3, 1), 2)
+        v.add_servo(Node(3, 2, 1), 2)
+
+        v.add_effector(Node(1, 3, 4))
+        v.add_effector(Node(1, 1, 4))
+        v.add_effector(Node(3, 1, 4))
+        v.add_effector(Node(3, 3, 4))
+
+        desired = np.array([[5, 5, 0],
+                            [5, -5, 0],
+                            [-5, -5, 0],
+                            [-5, 5, 0]])
+        assert np.all(v.actuate(5, -5, 5, -5) == desired)
+
+    def test_ex3(self):
+        v = Voxels()
+        v.add_servo(Node(2, 1, 1), 2)
+        v.add_effector(Node(4, 1, 3))
+        v.add_effector(Node(1, 1, 2))
+        desired = np.array([[0, 0, 5], [-5, 0, 0]])
+        assert np.all(v.actuate(5) == desired)
