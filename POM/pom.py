@@ -135,6 +135,7 @@ class TestServoInvariants:
             n = Node(1, 0, 1)
             v.add_servo(n, 0)
             v.add_effector(n)
+            v.add_effector(Node(1, 0, 1, 4))
             assert np.all(v.actuate(5) == [5, 0, 0])
 
         def test_node_2_X(self):
@@ -142,6 +143,7 @@ class TestServoInvariants:
             n = Node(1, 1, 0)
             v.add_servo(n, 0)
             v.add_effector(n)
+            v.add_effector(Node(1, 1, 0, 5))
             assert np.all(v.actuate(5) == [5, 0, 0])
 
         def test_node_0_Y(self):
@@ -149,6 +151,7 @@ class TestServoInvariants:
             n = Node(0, 1, 1)
             v.add_servo(n, 1)
             v.add_effector(n)
+            v.add_effector(Node(0, 1, 1, 3))
             assert np.all(v.actuate(5) == [0, 5, 0])
 
         def test_node_2_Y(self):
@@ -156,6 +159,7 @@ class TestServoInvariants:
             n = Node(1, 1, 0)
             v.add_servo(n, 1)
             v.add_effector(n)
+            v.add_effector(Node(1, 1, 0, 5))
             assert np.all(v.actuate(5) == [0, 5, 0])
 
         def test_node_0_Z(self):
@@ -163,6 +167,7 @@ class TestServoInvariants:
             n = Node(0, 1, 1)
             v.add_servo(n, 2)
             v.add_effector(n)
+            v.add_effector(Node(0, 1, 1, 3))
             assert np.all(v.actuate(5) == [0, 0, 5])
 
         def test_node_1_Z(self):
@@ -170,6 +175,7 @@ class TestServoInvariants:
             n = Node(1, 0, 1)
             v.add_servo(n, 2)
             v.add_effector(n)
+            v.add_effector(Node(1, 0, 1, 4))
             assert np.all(v.actuate(5) == [0, 0, 5])
 
 
@@ -178,34 +184,40 @@ class TestServoInvariants:
             v = Voxels()
             v.add_servo(Node(1, 0, 1), 0)
             v.add_effector(Node(3, 0, 1))
+            v.add_effector(Node(3, 0, 1, 4))
             assert np.all(v.actuate(5) == [-5, 0, 0])
 
         def test_node_2_X(self):
             v = Voxels()
             v.add_servo(Node(1, 1, 0), 0)
             v.add_effector(Node(3, 1, 0))
+            v.add_effector(Node(3, 1, 0, 5))
             assert np.all(v.actuate(5) == [-5, 0, 0])
 
         def test_node_0_Y(self):
             v = Voxels()
             v.add_servo(Node(0, 1, 1), 1)
             v.add_effector(Node(0, 3, 1))
+            v.add_effector(Node(0, 3, 1, 3))
             assert np.all(v.actuate(5) == [0, -5, 0])
 
         def test_node_2_Y(self):
             v = Voxels()
-            v.add_servo(Node(0, 1, 1), 1)
-            v.add_effector(Node(0, 3, 1))
+            v.add_servo(Node(1, 1, 0), 1)
+            v.add_effector(Node(1, 3, 0))
+            v.add_effector(Node(1, 3, 0, 5))
             assert np.all(v.actuate(5) == [0, -5, 0])
 
         def test_node_0_Z(self):
             v = Voxels()
             v.add_servo(Node(0, 1, 1), 2)
             v.add_effector(Node(0, 1, 3))
+            v.add_effector(Node(0, 1, 3, 3))
             assert np.all(v.actuate(5) == [0, 0, -5])
 
         def test_node_1_Z(self):
             v = Voxels()
             v.add_servo(Node(1, 0, 1), 2)
             v.add_effector(Node(1, 0, 3))
+            v.add_effector(Node(1, 0, 3, 4))
             assert np.all(v.actuate(5) == [0, 0, -5])
