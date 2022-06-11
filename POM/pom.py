@@ -56,7 +56,9 @@ class Servo:
         actuated by a given amount.
         '''
         if node.pos[self.pom] == self.node.pos[self.pom]:
-            return self._c_id * amount * A[self.pom, :, node.nid]
+            c_id = -1 if node.nid > 2 else 1
+            c = (-1)**((node.pos - self.node.pos).sum() // 2)
+            return c * c_id * self._c_id * amount * A[self.pom, :, node.nid]
         return np.zeros(3)
 
 
@@ -169,3 +171,41 @@ class TestServoInvariants:
             v.add_servo(n, 2)
             v.add_effector(n)
             assert np.all(v.actuate(5) == [0, 0, 5])
+
+
+    class TestOtherNodeMovesByActuationAmount:
+        def test_node_1_X(self):
+            v = Voxels()
+            v.add_servo(Node(1, 0, 1), 0)
+            v.add_effector(Node(3, 0, 1))
+            assert np.all(v.actuate(5) == [-5, 0, 0])
+
+        def test_node_2_X(self):
+            v = Voxels()
+            v.add_servo(Node(1, 1, 0), 0)
+            v.add_effector(Node(3, 1, 0))
+            assert np.all(v.actuate(5) == [-5, 0, 0])
+
+        def test_node_0_Y(self):
+            v = Voxels()
+            v.add_servo(Node(0, 1, 1), 1)
+            v.add_effector(Node(0, 3, 1))
+            assert np.all(v.actuate(5) == [0, -5, 0])
+
+        def test_node_2_Y(self):
+            v = Voxels()
+            v.add_servo(Node(0, 1, 1), 1)
+            v.add_effector(Node(0, 3, 1))
+            assert np.all(v.actuate(5) == [0, -5, 0])
+
+        def test_node_0_Z(self):
+            v = Voxels()
+            v.add_servo(Node(0, 1, 1), 2)
+            v.add_effector(Node(0, 1, 3))
+            assert np.all(v.actuate(5) == [0, 0, -5])
+
+        def test_node_1_Z(self):
+            v = Voxels()
+            v.add_servo(Node(1, 0, 1), 2)
+            v.add_effector(Node(1, 0, 3))
+            assert np.all(v.actuate(5) == [0, 0, -5])
