@@ -32,6 +32,8 @@ class Servo:
         assert direction in range(3)
 
         self.node = node
+        self.other_node = Node(*node.pos, node.nid)
+        self.other_node.pos[direction] -= 2
 
         # Unfortunately we can only identify the correct plane of
         # motion by elimination: it can't be the plane where the
@@ -46,7 +48,7 @@ class Servo:
 
         # Correction to the sign for when this servo rotates the plane
         # of motion "backwards".
-        self._c_id = A[:, direction, self.node.nid].sum()
+        self._c_id = A[self.pom, direction, self.node.nid]
 
     def conflicts_with(self, other):
         'Return whether this servo shares a plane of motion with another.'
@@ -81,6 +83,11 @@ class Voxels:
         self.effectors.append(node)
 
     def actuate(self, *amounts):
+        '''
+        Return the positions of the end effectors when the servos are
+        actuated by the given amounts. Positions are returned in an
+        array of shape (N,3) where N is the number of end effectors.
+        '''
         assert len(amounts) == len(self.servos)
 
         disp = []
@@ -92,255 +99,13 @@ class Voxels:
         return np.array(disp)
 
     def simulate(self, gait):
-        return np.array([self.actuate(*amounts) for amounts in gait])
-
-
-class TestNodeInvariants:
-    def test_nodes_must_lie_on_grid(self):
-        from pytest import raises
-        with raises(AssertionError):
-            Node(0,0,0)
-
-    def test_nodes_from_later_tests_are_ok(self):
-        Node(2, 1, 1)
-        Node(0, 1, 3)
-        Node(1, 1, 4)
-
-    def test_node_ids_can_be_inferred(self):
-        assert Node(0, 1, 3).nid == 0
-        assert Node(1, 1, 4).nid == 2
-
-    def test_node_ids_can_be_provided(self):
-        Node(0, 1, 3, 3)
-        Node(1, 1, 4, 5)
-
-    def test_bad_node_ids_are_detected(self):
-        from pytest import raises
-        with raises(AssertionError):
-            Node(0, 1, 3, 2)
-        with raises(AssertionError):
-            Node(1, 1, 4, 3)
-
-class TestServoInvariants:
-    class TestInitializationValidation:
-        def test_nodes_cant_move_in_their_fixed_direction(self):
-            from pytest import raises
-            with raises(ValueError):
-                Servo(Node(0,1,1,0), Servo.X)
-
-            with raises(ValueError):
-                Servo(Node(1,0,1,1), Servo.Y)
-
-            with raises(ValueError):
-                Servo(Node(1,1,0,2), Servo.Z)
-
-
-    class TestBaseNodeMovesByActuationAmount:
-        def test_node_1_X(self):
-            v = Voxels()
-            n = Node(1, 0, 1)
-            v.add_servo(n, Servo.X)
-            v.add_effector(n)
-            v.add_effector(Node(1, 0, 1, 4))
-            assert np.all(v.actuate(5) == [5, 0, 0])
-
-        def test_node_2_X(self):
-            v = Voxels()
-            n = Node(1, 1, 0)
-            v.add_servo(n, Servo.X)
-            v.add_effector(n)
-            v.add_effector(Node(1, 1, 0, 5))
-            assert np.all(v.actuate(5) == [5, 0, 0])
-
-        def test_node_0_Y(self):
-            v = Voxels()
-            n = Node(0, 1, 1)
-            v.add_servo(n, Servo.Y)
-            v.add_effector(n)
-            v.add_effector(Node(0, 1, 1, 3))
-            assert np.all(v.actuate(5) == [0, 5, 0])
-
-        def test_node_2_Y(self):
-            v = Voxels()
-            n = Node(1, 1, 0)
-            v.add_servo(n, Servo.Y)
-            v.add_effector(n)
-            v.add_effector(Node(1, 1, 0, 5))
-            assert np.all(v.actuate(5) == [0, 5, 0])
-
-        def test_node_0_Z(self):
-            v = Voxels()
-            n = Node(0, 1, 1)
-            v.add_servo(n, Servo.Z)
-            v.add_effector(n)
-            v.add_effector(Node(0, 1, 1, 3))
-            assert np.all(v.actuate(5) == [0, 0, 5])
-
-        def test_node_1_Z(self):
-            v = Voxels()
-            n = Node(1, 0, 1)
-            v.add_servo(n, Servo.Z)
-            v.add_effector(n)
-            v.add_effector(Node(1, 0, 1, 4))
-            assert np.all(v.actuate(5) == [0, 0, 5])
-
-
-    class TestOtherNodeMovesByActuationAmount:
-        def test_node_1_X(self):
-            v = Voxels()
-            v.add_servo(Node(1, 0, 1), Servo.X)
-            v.add_effector(Node(3, 0, 1))
-            v.add_effector(Node(1, 2, 1))
-            v.add_effector(Node(1, -2, 1))
-            v.add_effector(Node(3, 0, 1, 4))
-            assert np.all(v.actuate(5) == [-5, 0, 0])
-
-        def test_node_2_X(self):
-            v = Voxels()
-            v.add_servo(Node(1, 1, 0), Servo.X)
-            v.add_effector(Node(3, 1, 0))
-            v.add_effector(Node(1, 1, 2))
-            v.add_effector(Node(1, 1, -2))
-            v.add_effector(Node(3, 1, 0, 5))
-            assert np.all(v.actuate(5) == [-5, 0, 0])
-
-        def test_node_0_Y(self):
-            v = Voxels()
-            v.add_servo(Node(0, 1, 1), Servo.Y)
-            v.add_effector(Node(0, 3, 1))
-            v.add_effector(Node(2, 1, 1))
-            v.add_effector(Node(-2, 1, 1))
-            v.add_effector(Node(0, 3, 1, 3))
-            assert np.all(v.actuate(5) == [0, -5, 0])
-
-        def test_node_2_Y(self):
-            v = Voxels()
-            v.add_servo(Node(1, 1, 0), Servo.Y)
-            v.add_effector(Node(1, 3, 0))
-            v.add_effector(Node(1, 1, 2))
-            v.add_effector(Node(1, 1, -2))
-            v.add_effector(Node(1, 3, 0, 5))
-            assert np.all(v.actuate(5) == [0, -5, 0])
-
-        def test_node_0_Z(self):
-            v = Voxels()
-            v.add_servo(Node(0, 1, 1), Servo.Z)
-            v.add_effector(Node(0, 1, 3))
-            v.add_effector(Node(2, 1, 1))
-            v.add_effector(Node(-2, 1, 1))
-            v.add_effector(Node(0, 1, 3, 3))
-            assert np.all(v.actuate(5) == [0, 0, -5])
-
-        def test_node_1_Z(self):
-            v = Voxels()
-            v.add_servo(Node(1, 0, 1), Servo.Z)
-            v.add_effector(Node(1, 0, 3))
-            v.add_effector(Node(1, 2, 1))
-            v.add_effector(Node(1, -2, 1))
-            v.add_effector(Node(1, 0, 3, 4))
-            assert np.all(v.actuate(5) == [0, 0, -5])
-
-
-    class TestNodesAboveActuatorMoveOutwards:
-        def test_node_1_X(self):
-            v = Voxels()
-            v.add_servo(Node(1, 0, 1), Servo.X)
-            v.add_effector(Node(2, 1, 1))
-            v.add_effector(Node(2, -1, 1))
-            assert np.all(v.actuate(5) == [[0, 5, 0], [0, -5, 0]])
-
-        def test_node_2_X(self):
-            v = Voxels()
-            v.add_servo(Node(1, 1, 0), Servo.X)
-            v.add_effector(Node(2, 1, 1))
-            v.add_effector(Node(2, 1, -1))
-            assert np.all(v.actuate(5) == [[0, 0, 5], [0, 0, -5]])
-
-        def test_node_0_Y(self):
-            v = Voxels()
-            v.add_servo(Node(0, 1, 1), Servo.Y)
-            v.add_effector(Node(1, 2, 1))
-            v.add_effector(Node(-1, 2, 1))
-            assert np.all(v.actuate(5) == [[5, 0, 0], [-5, 0, 0]])
-
-        def test_node_2_Y(self):
-            v = Voxels()
-            v.add_servo(Node(1, 1, 0), Servo.Y)
-            v.add_effector(Node(1, 2, 1))
-            v.add_effector(Node(1, 2, -1))
-            assert np.all(v.actuate(5) == [[0, 0, 5], [0, 0, -5]])
-
-        def test_node_0_Z(self):
-            v = Voxels()
-            v.add_servo(Node(0, 1, 1), Servo.Z)
-            v.add_effector(Node(1, 1, 2))
-            v.add_effector(Node(-1, 1, 2))
-            assert np.all(v.actuate(5) == [[5, 0, 0], [-5, 0, 0]])
-
-        def test_node_1_Z(self):
-            v = Voxels()
-            v.add_servo(Node(1, 0, 1), Servo.Z)
-            v.add_effector(Node(1, 1, 2))
-            v.add_effector(Node(1, -1, 2))
-            assert np.all(v.actuate(5) == [[0, 5, 0], [0, -5, 0]])
-
-
-
-
-
-class TestNotebookExamples:
-    def test_ex1(self):
-        v = Voxels()
-        v.add_servo(Node(2, 1, 3), Servo.Z)
-        v.add_effector(Node(0, 1, 3))
-        v.add_effector(Node(1, 1, 4))
-        desired = np.array([[0., 0., 5.],
-                            [5., 0., 0.]])
-        assert np.all(v.actuate(-5.) == desired)
-
-    def test_ex2(self):
-        v = Voxels()
-        v.add_servo(Node(2, 1, 3), Servo.Z)
-        v.add_servo(Node(1, 2, 3), Servo.Z)
-        v.add_servo(Node(2, 3, 3), Servo.Z)
-        v.add_servo(Node(3, 2, 3), Servo.Z)
-
-        v.add_effector(Node(1, 3, 4))
-        v.add_effector(Node(1, 1, 4))
-        v.add_effector(Node(3, 1, 4))
-        v.add_effector(Node(3, 3, 4))
-
-        desired = np.array([[-5, -5, 0],
-                            [-5, 5, 0],
-                            [5, 5, 0],
-                            [5, -5, 0]])
-        assert np.all(v.actuate(5, -5, 5, -5) == desired)
-
-    def test_ex3(self):
-        v = Voxels()
-        v.add_servo(Node(2, 1, 1), Servo.Z)
-        v.add_effector(Node(4, 1, 3))
-        v.add_effector(Node(1, 1, 2))
-        desired = np.array([[0, 0, 5], [-5, 0, 0]])
-        assert np.all(v.actuate(5) == desired)
-
-    def test_ex4(self):
-        v = Voxels()
-        v.add_servo(Node(2, 1, 1), Servo.Z)
-        v.add_servo(Node(1, 2, 1), Servo.Z)
-        v.add_servo(Node(2, 3, 1), Servo.Z)
-        v.add_servo(Node(3, 2, 1), Servo.Z)
-
-        v.add_effector(Node(1, 3, 0))
-        v.add_effector(Node(1, 1, 0))
-        v.add_effector(Node(3, 1, 0))
-        v.add_effector(Node(3, 3, 0))
-
-        desired = np.array([[0, -5, 0],
-                            [-5, 5, 0],
-                            [5, 0, 0],
-                            [0, 0, 0]])
-        assert np.all(v.actuate(-5, 5, 0, 0) == desired)
+        '''
+        Given an array of shape (M,T) with the positions of M servos
+        at T different timesteps, return an array of N end effector
+        positions at each of those times with shape (N,3,T).
+        '''
+        return np.array([self.actuate(*amounts).T
+                         for amounts in np.transpose(gait)]).T
 
 
 class VoxelBot(Voxels):
