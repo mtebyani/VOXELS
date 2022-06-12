@@ -184,6 +184,8 @@ class TestServoInvariants:
             v = Voxels()
             v.add_servo(Node(1, 0, 1), 0)
             v.add_effector(Node(3, 0, 1))
+            v.add_effector(Node(1, 2, 1))
+            v.add_effector(Node(1, -2, 1))
             v.add_effector(Node(3, 0, 1, 4))
             assert np.all(v.actuate(5) == [-5, 0, 0])
 
@@ -191,6 +193,8 @@ class TestServoInvariants:
             v = Voxels()
             v.add_servo(Node(1, 1, 0), 0)
             v.add_effector(Node(3, 1, 0))
+            v.add_effector(Node(1, 1, 2))
+            v.add_effector(Node(1, 1, -2))
             v.add_effector(Node(3, 1, 0, 5))
             assert np.all(v.actuate(5) == [-5, 0, 0])
 
@@ -198,6 +202,8 @@ class TestServoInvariants:
             v = Voxels()
             v.add_servo(Node(0, 1, 1), 1)
             v.add_effector(Node(0, 3, 1))
+            v.add_effector(Node(2, 1, 1))
+            v.add_effector(Node(-2, 1, 1))
             v.add_effector(Node(0, 3, 1, 3))
             assert np.all(v.actuate(5) == [0, -5, 0])
 
@@ -205,6 +211,8 @@ class TestServoInvariants:
             v = Voxels()
             v.add_servo(Node(1, 1, 0), 1)
             v.add_effector(Node(1, 3, 0))
+            v.add_effector(Node(1, 1, 2))
+            v.add_effector(Node(1, 1, -2))
             v.add_effector(Node(1, 3, 0, 5))
             assert np.all(v.actuate(5) == [0, -5, 0])
 
@@ -212,6 +220,8 @@ class TestServoInvariants:
             v = Voxels()
             v.add_servo(Node(0, 1, 1), 2)
             v.add_effector(Node(0, 1, 3))
+            v.add_effector(Node(2, 1, 1))
+            v.add_effector(Node(-2, 1, 1))
             v.add_effector(Node(0, 1, 3, 3))
             assert np.all(v.actuate(5) == [0, 0, -5])
 
@@ -219,36 +229,85 @@ class TestServoInvariants:
             v = Voxels()
             v.add_servo(Node(1, 0, 1), 2)
             v.add_effector(Node(1, 0, 3))
+            v.add_effector(Node(1, 2, 1))
+            v.add_effector(Node(1, -2, 1))
             v.add_effector(Node(1, 0, 3, 4))
             assert np.all(v.actuate(5) == [0, 0, -5])
+
+
+    class TestNodesAboveActuatorMoveOutwards:
+        def test_node_1_X(self):
+            v = Voxels()
+            v.add_servo(Node(1, 0, 1), 0)
+            v.add_effector(Node(2, 1, 1))
+            v.add_effector(Node(2, -1, 1))
+            assert np.all(v.actuate(5) == [[0, 5, 0], [0, -5, 0]])
+
+        def test_node_2_X(self):
+            v = Voxels()
+            v.add_servo(Node(1, 1, 0), 0)
+            v.add_effector(Node(2, 1, 1))
+            v.add_effector(Node(2, 1, -1))
+            assert np.all(v.actuate(5) == [[0, 0, 5], [0, 0, -5]])
+
+        def test_node_0_Y(self):
+            v = Voxels()
+            v.add_servo(Node(0, 1, 1), 1)
+            v.add_effector(Node(1, 2, 1))
+            v.add_effector(Node(-1, 2, 1))
+            assert np.all(v.actuate(5) == [[5, 0, 0], [-5, 0, 0]])
+
+        def test_node_2_Y(self):
+            v = Voxels()
+            v.add_servo(Node(1, 1, 0), 1)
+            v.add_effector(Node(1, 2, 1))
+            v.add_effector(Node(1, 2, -1))
+            assert np.all(v.actuate(5) == [[0, 0, 5], [0, 0, -5]])
+
+        def test_node_0_Z(self):
+            v = Voxels()
+            v.add_servo(Node(0, 1, 1), 2)
+            v.add_effector(Node(1, 1, 2))
+            v.add_effector(Node(-1, 1, 2))
+            assert np.all(v.actuate(5) == [[5, 0, 0], [-5, 0, 0]])
+
+        def test_node_1_Z(self):
+            v = Voxels()
+            v.add_servo(Node(1, 0, 1), 2)
+            v.add_effector(Node(1, 1, 2))
+            v.add_effector(Node(1, -1, 2))
+            assert np.all(v.actuate(5) == [[0, 5, 0], [0, -5, 0]])
+
+
+
 
 
 class TestNotebookExamples:
     def test_ex1(self):
         v = Voxels()
-        v.add_servo(Node(2, 1, 1), 2)
+        v.add_servo(Node(2, 1, 3), 2)
         v.add_effector(Node(0, 1, 3))
         v.add_effector(Node(1, 1, 4))
-        desired = np.array([[0., 0., -5.],
-                            [-5., 0., 0.]])
+        desired = np.array([[0., 0., 5.],
+                            [5., 0., 0.]])
         assert np.all(v.actuate(-5.) == desired)
 
     def test_ex2(self):
         v = Voxels()
-        v.add_servo(Node(2, 1, 1), 2)
-        v.add_servo(Node(1, 2, 1), 2)
-        v.add_servo(Node(2, 3, 1), 2)
-        v.add_servo(Node(3, 2, 1), 2)
+        v.add_servo(Node(2, 1, 3), 2)
+        v.add_servo(Node(1, 2, 3), 2)
+        v.add_servo(Node(2, 3, 3), 2)
+        v.add_servo(Node(3, 2, 3), 2)
 
         v.add_effector(Node(1, 3, 4))
         v.add_effector(Node(1, 1, 4))
         v.add_effector(Node(3, 1, 4))
         v.add_effector(Node(3, 3, 4))
 
-        desired = np.array([[5, 5, 0],
-                            [5, -5, 0],
-                            [-5, -5, 0],
-                            [-5, 5, 0]])
+        desired = np.array([[-5, -5, 0],
+                            [-5, 5, 0],
+                            [5, 5, 0],
+                            [5, -5, 0]])
         assert np.all(v.actuate(5, -5, 5, -5) == desired)
 
     def test_ex3(self):
@@ -258,3 +317,102 @@ class TestNotebookExamples:
         v.add_effector(Node(1, 1, 2))
         desired = np.array([[0, 0, 5], [-5, 0, 0]])
         assert np.all(v.actuate(5) == desired)
+
+    def test_ex4(self):
+        v = Voxels()
+        v.add_servo(Node(2, 1, 1), 2)
+        v.add_servo(Node(1, 2, 1), 2)
+        v.add_servo(Node(2, 3, 1), 2)
+        v.add_servo(Node(3, 2, 1), 2)
+
+        v.add_effector(Node(1, 3, 0))
+        v.add_effector(Node(1, 1, 0))
+        v.add_effector(Node(3, 1, 0))
+        v.add_effector(Node(3, 3, 0))
+
+        desired = np.array([[0, -5, 0],
+                            [-5, 5, 0],
+                            [5, 0, 0],
+                            [0, 0, 0]])
+        assert np.all(v.actuate(-5, 5, 0, 0) == desired)
+
+
+class VoxelBot(Voxels):
+    def __init__(self):
+        super().__init__()
+
+        self.add_servo(Node(2, 1, 1), 2)
+        self.add_servo(Node(1, 2, 1), 2)
+        self.add_servo(Node(2, 3, 1), 2)
+        self.add_servo(Node(3, 2, 1), 2)
+
+        self.add_effector(Node(1, 3, 4))
+        self.add_effector(Node(3, 3, 4))
+        self.add_effector(Node(1, 1, 4))
+        self.add_effector(Node(3, 1, 4))
+
+
+class TestVoxelBotGait:
+    def test_step1(self):
+        v = VoxelBot()
+        desired = np.array([[0, 5, 0],
+                            [0, 0, 0],
+                            [5, -5, 0],
+                            [-5, 0, 0]])
+        assert np.all(v.actuate(5, -5, 0, 0) == desired)
+
+    def test_step2(self):
+        v = VoxelBot()
+        desired = np.array([[5, 5, 0],
+                            [-5, 5, 0],
+                            [5, -5, 0],
+                            [-5, -5, 0]])
+        assert np.all(v.actuate(5, -5, 5, -5) == desired)
+
+    def test_step3(self):
+        v = VoxelBot()
+        desired = np.array([[5, 0, 0],
+                            [-5, 5, 0],
+                            [0, 0, 0],
+                            [0, -5, 0]])
+        assert np.all(v.actuate(0, 0, 5, -5) == desired)
+
+    def test_step4(self):
+        v = VoxelBot()
+        desired = np.array([[5, -5, 0],
+                            [-5, 5, 0],
+                            [-5, 5, 0],
+                            [5, -5, 0]])
+        assert np.all(v.actuate(-5, 5, 5, -5) == desired)
+
+    def test_step5(self):
+        v = VoxelBot()
+        desired = np.array([[0, -5, 0],
+                            [0, 0, 0],
+                            [-5, 5, 0],
+                            [5, 0, 0]])
+        assert np.all(v.actuate(-5, 5, 0, 0) == desired)
+
+    def test_step6(self):
+        v = VoxelBot()
+        desired = np.array([[-5, -5, 0],
+                            [5, -5, 0],
+                            [-5, 5, 0],
+                            [5, 5, 0]])
+        assert np.all(v.actuate(-5, 5, -5, 5) == desired)
+
+    def test_step7(self):
+        v = VoxelBot()
+        desired = np.array([[-5, 0, 0],
+                            [5, -5, 0],
+                            [0, 0, 0],
+                            [0, 5, 0]])
+        assert np.all(v.actuate(0, 0, -5, 5) == desired)
+
+    def test_step8(self):
+        v = VoxelBot()
+        desired = np.array([[-5, 5, 0],
+                            [5, -5, 0],
+                            [5, -5, 0],
+                            [-5, 5, 0]])
+        assert np.all(v.actuate(5, -5, -5, 5) == desired)
