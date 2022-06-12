@@ -24,16 +24,20 @@ class Node:
             assert nid in range(6) and nid % 3 == self.nid
             self.nid = nid
 
+    def __eq__(self, other):
+        return np.all(self.pos == other.pos)
+
 
 class Servo:
     X, Y, Z = 0, 1, 2
 
-    def __init__(self, node, direction):
+    def __init__(self, node, direction, ideality=1.0):
         assert direction in range(3)
 
         self.node = node
         self.other_node = Node(*node.pos, node.nid)
         self.other_node.pos[direction] -= 2
+        self.ideality = ideality
 
         # Unfortunately we can only identify the correct plane of
         # motion by elimination: it can't be the plane where the
@@ -48,7 +52,7 @@ class Servo:
 
         # Correction to the sign for when this servo rotates the plane
         # of motion "backwards".
-        self._c_id = A[self.pom, direction, self.node.nid]
+        self._c_id = A[self.pom, direction, self.node.nid % 3]
 
     def conflicts_with(self, other):
         'Return whether this servo shares a plane of motion with another.'
@@ -60,6 +64,9 @@ class Servo:
         Return how much this servo affects the specified node when
         actuated by a given amount.
         '''
+        if node not in (self.node, self.other_node):
+            amount *= self.ideality
+
         if node.pos[self.pom] == self.node.pos[self.pom]:
             c_id = -1 if node.nid > 2 else 1
             c = (-1)**abs((node.pos - self.node.pos).sum() // 2)
@@ -68,12 +75,13 @@ class Servo:
 
 
 class Voxels:
-    def __init__(self):
+    def __init__(self, ideality=1.0):
         self.servos = []
         self.effectors = []
+        self.ideality = ideality
 
     def add_servo(self, node, direction):
-        new = Servo(node, direction)
+        new = Servo(node, direction, ideality=self.ideality)
         for servo in self.servos:
             if servo.conflicts_with(new):
                 raise ValueError('Servo makes system overdetermined.')
@@ -109,8 +117,8 @@ class Voxels:
 
 
 class VoxelBot(Voxels):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, ideality=0.8):
+        super().__init__(ideality)
 
         self.add_servo(Node(2, 1, 1), Servo.Z)
         self.add_servo(Node(1, 2, 1), Servo.Z)
@@ -129,7 +137,7 @@ class TestVoxelBotGait:
         desired = np.array([[0, 5, 0],
                             [0, 0, 0],
                             [5, -5, 0],
-                            [-5, 0, 0]])
+                            [-5, 0, 0]]) * v.ideality
         assert np.all(v.actuate(5, -5, 0, 0) == desired)
 
     def test_step2(self):
@@ -137,7 +145,7 @@ class TestVoxelBotGait:
         desired = np.array([[5, 5, 0],
                             [-5, 5, 0],
                             [5, -5, 0],
-                            [-5, -5, 0]])
+                            [-5, -5, 0]]) * v.ideality
         assert np.all(v.actuate(5, -5, 5, -5) == desired)
 
     def test_step3(self):
@@ -145,7 +153,7 @@ class TestVoxelBotGait:
         desired = np.array([[5, 0, 0],
                             [-5, 5, 0],
                             [0, 0, 0],
-                            [0, -5, 0]])
+                            [0, -5, 0]]) * v.ideality
         assert np.all(v.actuate(0, 0, 5, -5) == desired)
 
     def test_step4(self):
@@ -153,7 +161,7 @@ class TestVoxelBotGait:
         desired = np.array([[5, -5, 0],
                             [-5, 5, 0],
                             [-5, 5, 0],
-                            [5, -5, 0]])
+                            [5, -5, 0]]) * v.ideality
         assert np.all(v.actuate(-5, 5, 5, -5) == desired)
 
     def test_step5(self):
@@ -161,7 +169,7 @@ class TestVoxelBotGait:
         desired = np.array([[0, -5, 0],
                             [0, 0, 0],
                             [-5, 5, 0],
-                            [5, 0, 0]])
+                            [5, 0, 0]]) * v.ideality
         assert np.all(v.actuate(-5, 5, 0, 0) == desired)
 
     def test_step6(self):
@@ -169,7 +177,7 @@ class TestVoxelBotGait:
         desired = np.array([[-5, -5, 0],
                             [5, -5, 0],
                             [-5, 5, 0],
-                            [5, 5, 0]])
+                            [5, 5, 0]]) * v.ideality
         assert np.all(v.actuate(-5, 5, -5, 5) == desired)
 
     def test_step7(self):
@@ -177,7 +185,7 @@ class TestVoxelBotGait:
         desired = np.array([[-5, 0, 0],
                             [5, -5, 0],
                             [0, 0, 0],
-                            [0, 5, 0]])
+                            [0, 5, 0]]) * v.ideality
         assert np.all(v.actuate(0, 0, -5, 5) == desired)
 
     def test_step8(self):
@@ -185,5 +193,5 @@ class TestVoxelBotGait:
         desired = np.array([[-5, 5, 0],
                             [5, -5, 0],
                             [5, -5, 0],
-                            [-5, 5, 0]])
+                            [-5, 5, 0]]) * v.ideality
         assert np.all(v.actuate(5, -5, -5, 5) == desired)
