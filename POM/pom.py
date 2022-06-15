@@ -24,6 +24,10 @@ class Node:
             assert nid in range(6) and nid % 3 == self.nid
             self.nid = nid
 
+    def offset_by(self, x, y, z, nid=None):
+        'Return a new node at a position offset from this one.'
+        return Node(*(self.pos + [x, y, z]), nid)
+
     def __eq__(self, other):
         return np.all(self.pos == other.pos)
 
@@ -35,8 +39,8 @@ class Servo:
         assert direction in range(3)
 
         self.node = node
-        self.other_node = Node(*node.pos, node.nid)
-        self.other_node.pos[direction] -= 2
+        offset = 2*(np.arange(3) == direction)
+        self.other_node = node.offset_by(*offset)
         self.ideality = ideality
 
         # Unfortunately we can only identify the correct plane of
