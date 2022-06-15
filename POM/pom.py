@@ -52,7 +52,7 @@ class Servo:
 
         # Correction to the sign for when this servo rotates the plane
         # of motion "backwards".
-        self._c_id = A[self.pom, direction, self.node.nid % 3]
+        self._c_rot = A[self.pom, direction, self.node.nid % 3]
 
     def conflicts_with(self, other):
         'Return whether this servo shares a plane of motion with another.'
@@ -67,11 +67,20 @@ class Servo:
         if node not in (self.node, self.other_node):
             amount *= self.ideality
 
+        rotation_amount = amount * self.connectivity(node)
+        return rotation_amount * A[self.pom, :, node.nid]
+
+    def connectivity(self, node):
+        '''
+        Find the sign of the connectivity matrix entry from this Servo
+        to a given node.
+        '''
         if node.pos[self.pom] == self.node.pos[self.pom]:
             c_id = -1 if node.nid > 2 else 1
             c = (-1)**abs((node.pos - self.node.pos).sum() // 2)
-            return c * c_id * self._c_id * amount * A[self.pom, :, node.nid]
-        return np.zeros(3)
+            return c * c_id * self._c_rot
+        else:
+            return 0
 
 
 class Voxels:
@@ -89,6 +98,11 @@ class Voxels:
 
     def add_effector(self, node):
         self.effectors.append(node)
+
+    def connectivity_matrix(self):
+        return np.array([
+            [s.connectivity(e) for e in self.effectors]
+            for s in self.servos])
 
     def actuate(self, *amounts):
         '''
@@ -125,10 +139,10 @@ class VoxelBot(Voxels):
         self.add_servo(Node(2, 3, 1), Servo.Z)
         self.add_servo(Node(3, 2, 1), Servo.Z)
 
-        self.add_effector(Node(1, 3, 4))
-        self.add_effector(Node(3, 3, 4))
-        self.add_effector(Node(1, 1, 4))
-        self.add_effector(Node(3, 1, 4))
+        self.add_effector(Node(1, 3, 4, 5))
+        self.add_effector(Node(3, 3, 4, 5))
+        self.add_effector(Node(1, 1, 4, 5))
+        self.add_effector(Node(3, 1, 4, 5))
 
 
 class TestVoxelBotGait:
